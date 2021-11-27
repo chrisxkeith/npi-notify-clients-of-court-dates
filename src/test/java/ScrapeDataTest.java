@@ -4,9 +4,7 @@ import org.junit.Before;
 import org.junit.After;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-// import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.JavascriptExecutor;
 import java.util.*;
 public class ScrapeDataTest {
@@ -36,15 +34,16 @@ public class ScrapeDataTest {
     driver.findElement(By.name("end_date")).click();
     driver.findElement(By.name("end_date")).sendKeys("14-NOV-2021");
     driver.findElement(By.name("case_type")).click();
-    {
-      WebElement dropdown = driver.findElement(By.name("case_type"));
-      dropdown.findElement(By.xpath("//option[. = '16 - FED - OTHER']")).click();
-    }
+
+    driver.findElement(By.cssSelector("option:nth-child(17)")).click();
     driver.findElement(By.cssSelector("input:nth-child(4)")).click();
-    vars.put("ID", driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(1)")).getText());
+    driver.switchTo().frame(1);
+
     driver.findElement(By.linkText("2109558")).click();
+    driver.switchTo().frame(1);
     vars.put("courtDate", driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(2)")).getText());
     vars.put("room", driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText());
     vars.put("location", driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText());
+    System.out.println(vars.get("courtDate").toString());
   }
 }
