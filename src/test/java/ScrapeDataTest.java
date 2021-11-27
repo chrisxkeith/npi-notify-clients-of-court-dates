@@ -6,40 +6,88 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.JavascriptExecutor;
-import java.util.*;
-public class ScrapeDataTest {
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-  public class Scraper {
-    WebDriver driver;
-    private Map<String, Object> vars;
-    public Scraper(WebDriver driver) {
-      this.driver = driver;
-      this.vars = new HashMap<String, Object>();
+public class ScrapeDataTest {
+  private void doSleep(int seconds) {
+    try {
+      Thread.sleep(seconds * 1000);
+    } catch (InterruptedException e) {
+      // TO DO Auto-generated catch block
+      e.printStackTrace();
     }
-    public void run() {
-      driver.get("https://gscivildata.shelbycountytn.gov/pls/gnweb/ck_public_qry_cpty.cp_personcase_setup_idx");
-      driver.switchTo().frame(1);
-      driver.findElement(By.name("partial_ind")).click();
-      driver.findElement(By.name("last_name")).click();
-      driver.findElement(By.name("last_name")).sendKeys("A");
-      driver.findElement(By.name("begin_date")).click();
-      driver.findElement(By.name("begin_date")).sendKeys("01-NOV-2021");
-      driver.findElement(By.cssSelector("tr:nth-child(7) > td:nth-child(1)")).click();
-      driver.findElement(By.name("end_date")).click();
-      driver.findElement(By.name("end_date")).sendKeys("14-NOV-2021");
-      driver.findElement(By.name("case_type")).click();
-  
-      driver.findElement(By.cssSelector("option:nth-child(17)")).click();
-      driver.findElement(By.cssSelector("input:nth-child(4)")).click();
-      driver.switchTo().frame(1);
-  
-      driver.findElement(By.linkText("2109558")).click();
-      driver.switchTo().frame(1);
-      vars.put("courtDate", driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(2)")).getText());
-      vars.put("room", driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText());
-      vars.put("location", driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText());
-      System.out.println(vars.get("courtDate").toString());
+  }
+  String trimString(String s) {
+    return s.trim().replace(",","");
+  }
+  void scrapeOnePage() {
+    final String NAME_CORPORATION_COLUMN = "2";
+    final String ADDRESS_COLUMN = "3";
+    final String PARTY_TYPE_COLUMN = "4";
+    driver.switchTo().frame(1);
+
+        // Firefox fails here with "NoSuchWindowError: Browsing context has been discarded"
+    final String party_type = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + PARTY_TYPE_COLUMN + ")")).getText();
+    String[] names = new String[2];
+    String clientAddress = "";
+    String caseNumber = "";
+    String courtDate = "";
+    String room = "";
+    String location = "";
+
+    if (party_type.equals("DEFENDANT")) {
+      final String defendant_name = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + NAME_CORPORATION_COLUMN + ")")).getText();
+      if (defendant_name.contains(",")) {
+        names = defendant_name.split(",");
+      } else {
+        names[0] = defendant_name;
+        names[1] = "";
       }
+      final String cellText = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + ADDRESS_COLUMN + ")")).getText();
+
+      String[] chunks = cellText.split("Case:");
+      clientAddress = this.trimString(chunks[0]);
+      caseNumber = "";
+      Pattern pattern = Pattern.compile("\\d\\d\\d\\d\\d\\d\\d", Pattern.CASE_INSENSITIVE);
+      Matcher matcher = pattern.matcher(cellText);
+      if (matcher.find()) {
+        caseNumber = matcher.group();
+      }
+      if (!caseNumber.isEmpty()) {
+          driver.findElement(By.linkText(caseNumber)).click();
+// TO DO : check for 'No case events were found.', return empty strings if so.
+          courtDate = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(2)")).getText();
+          room = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText();
+          location = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText();
+          // driver.execute_script("window.history.go(-1)");
+          System.out.println(this.trimString(names[0]) + ',' +
+                              this.trimString(names[1]) + ',' +
+                              this.trimString(clientAddress) + ',' +
+                              this.trimString(caseNumber) + ',' +
+                              this.trimString(courtDate) + ',' +
+                              this.trimString(location) + ',' +
+                              this.trimString(room) + ',' +
+                              this.trimString(location));
+      }
+    }
+  }
+  void scrapeByFirstLetter(String firstLetter) {
+    driver.get("https://gscivildata.shelbycountytn.gov/pls/gnweb/ck_public_qry_cpty.cp_personcase_setup_idx");
+    driver.switchTo().frame(1);
+    driver.findElement(By.name("partial_ind")).click();
+    driver.findElement(By.name("last_name")).click();
+    driver.findElement(By.name("last_name")).sendKeys(firstLetter);
+    driver.findElement(By.name("begin_date")).click();
+    driver.findElement(By.name("begin_date")).sendKeys("01-NOV-2021");
+    driver.findElement(By.cssSelector("tr:nth-child(7) > td:nth-child(1)")).click();
+    driver.findElement(By.name("end_date")).click();
+    driver.findElement(By.name("end_date")).sendKeys("14-NOV-2021");
+    driver.findElement(By.name("case_type")).click();
+
+    driver.findElement(By.cssSelector("option:nth-child(17)")).click();
+    driver.findElement(By.cssSelector("input:nth-child(4)")).click();
+    this.scrapeOnePage();
   }
 
   private WebDriver driver;
@@ -47,6 +95,7 @@ public class ScrapeDataTest {
   @Before
   public void setUp() {
     driver = new ChromeDriver();
+    js = (JavascriptExecutor) driver;
   }
   @After
   public void tearDown() {
@@ -54,6 +103,6 @@ public class ScrapeDataTest {
   }
   @Test
   public void scrapeData() {
-    new Scraper(driver).run();
+    this.scrapeByFirstLetter("A");
   }
 }
