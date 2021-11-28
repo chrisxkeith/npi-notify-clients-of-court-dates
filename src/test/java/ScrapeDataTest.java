@@ -10,6 +10,29 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ScrapeDataTest {
+  class ClientRowData {
+    String clientFirstName = "";
+    String clientLastName = "";
+    String clientAddress = "";
+    String caseNumber = "";
+    String courtDate = "";
+    String room = "";
+    String location = "";
+    String landlord = "";
+    String trimString(String s) {
+      return s.trim().replace(",", "").replace("\n", " ");
+    }
+    void print() {
+      System.out.println(this.trimString(clientLastName) + ',' +
+      this.trimString(clientFirstName) + ',' +
+      this.trimString(clientAddress) + ',' +
+      this.trimString(caseNumber) + ',' +
+      this.trimString(courtDate) + ',' +
+      this.trimString(location) + ',' +
+      this.trimString(room) + ',' +
+      this.trimString(location));
+    }
+}
 /*  private void doSleep(int seconds) {
     try {
       Thread.sleep(seconds * 1000);
@@ -18,56 +41,55 @@ public class ScrapeDataTest {
       e.printStackTrace();
     }
   } */
-  String trimString(String s) {
-    return s.trim().replace(",","");
+  void fillInCourtInfo(ClientRowData crd) {
+    if (!crd.caseNumber.isEmpty()) {
+      driver.findElement(By.linkText(crd.caseNumber)).click();
+      try {
+        crd.courtDate = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(2)")).getText();
+        crd.room = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText();
+        crd.location = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText();
+        crd.print();
+      } catch(Throwable e) {
+        // Assume no (or incomplete) case event history. Continue to the next row in the case list.
+      }              
+      this.js.executeScript("window.history.go(-1)");
+    }
   }
-  void scrapeOnePage() {
+  void fillInDefendantInfo() {
     final String NAME_CORPORATION_COLUMN = "2";
     final String ADDRESS_COLUMN = "3";
-    final String PARTY_TYPE_COLUMN = "4";
 
+    ClientRowData crd = new ClientRowData();      
+    final String defendant_name = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + NAME_CORPORATION_COLUMN + ")")).getText();
+    if (defendant_name.contains(",")) {
+      String[] names = defendant_name.split(","); // last, first
+      crd.clientLastName = names[0];
+      crd.clientFirstName = names[1];
+    } else {
+      crd.clientLastName = defendant_name;
+    }
+    final String cellText = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + ADDRESS_COLUMN + ")")).getText();    
+    String[] chunks = cellText.split("Case:");
+    crd.clientAddress = chunks[0];
+    Pattern pattern = Pattern.compile("\\d\\d\\d\\d\\d\\d\\d", Pattern.CASE_INSENSITIVE);
+    Matcher matcher = pattern.matcher(cellText);
+    if (matcher.find()) {
+      crd.caseNumber = matcher.group();
+    }
+    this.fillInCourtInfo(crd);
+    if (this.debug) {
+      crd.print();
+    }
+  }
+  void scrapeOnePage() {
     for (Integer rowNumber = 2; rowNumber < 22; rowNumber++) {
       try {
         driver.switchTo().frame(1);
         // Firefox fails here with "NoSuchWindowError: Browsing context has been discarded"
+        final String PARTY_TYPE_COLUMN = "4";
         final String party_type = driver.findElement(By.cssSelector("tr:nth-child(" + rowNumber.toString() + ") > td:nth-child(" + PARTY_TYPE_COLUMN + ")")).getText();
-        if (party_type.equals("DEFENDANT")) {      
-          final String defendant_name = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + NAME_CORPORATION_COLUMN + ")")).getText();
-          String[] names = new String[2];
-          if (defendant_name.contains(",")) {
-            names = defendant_name.split(","); // last, first
-          } else {
-            names[1] = defendant_name;
-            names[0] = "";
-          }
-          final String cellText = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + ADDRESS_COLUMN + ")")).getText();    
-          String[] chunks = cellText.split("Case:");
-          String clientAddress = this.trimString(chunks[0]);
-          String caseNumber = "";
-          Pattern pattern = Pattern.compile("\\d\\d\\d\\d\\d\\d\\d", Pattern.CASE_INSENSITIVE);
-          Matcher matcher = pattern.matcher(cellText);
-          if (matcher.find()) {
-            caseNumber = matcher.group();
-          }
-          if (!caseNumber.isEmpty()) {
-              driver.findElement(By.linkText(caseNumber)).click();
-              try {
-                String courtDate = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(2)")).getText();
-                String room = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText();
-                String location = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText();
-                System.out.println(this.trimString(names[1]) + ',' +
-                                    this.trimString(names[0]) + ',' +
-                                    this.trimString(clientAddress) + ',' +
-                                    this.trimString(caseNumber) + ',' +
-                                    this.trimString(courtDate) + ',' +
-                                    this.trimString(location) + ',' +
-                                    this.trimString(room) + ',' +
-                                    this.trimString(location));
-              } catch(Throwable e) {
-                // Assume no (or incomplete) case event history. Continue to the next row in the case list.
-              }              
-              this.js.executeScript("window.history.go(-1)");
-          }
+        if (party_type.equals("DEFENDANT")) {
+          fillInDefendantInfo();
         }
       } catch(Throwable t) {
         // Assume we ran out of rows on this page.
@@ -92,7 +114,7 @@ public class ScrapeDataTest {
     driver.findElement(By.cssSelector("input:nth-child(4)")).click();
     this.scrapeOnePage();
   }
-
+  private boolean debug = false;
   private WebDriver driver;
   JavascriptExecutor js;
   @Before
