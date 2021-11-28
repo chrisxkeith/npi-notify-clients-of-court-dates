@@ -45,11 +45,15 @@ public class ScrapeDataTest {
     if (!crd.caseNumber.isEmpty()) {
       driver.findElement(By.linkText(crd.caseNumber)).click();
       try {
+        driver.switchTo().frame(1);
         crd.courtDate = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(2)")).getText();
         crd.room = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText();
         crd.location = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText();
         crd.print();
       } catch(Throwable e) {
+        if (this.debug) {
+          System.out.println("crd.caseNumber exception: " + e.toString());
+        }
         // Assume no (or incomplete) case event history. Continue to the next row in the case list.
       }              
       this.js.executeScript("window.history.go(-1)");
@@ -83,14 +87,21 @@ public class ScrapeDataTest {
     }
   }
   void scrapeOnePage() {
+    boolean switchFrame = true;
     for (Integer rowNumber = 2; rowNumber < 22; rowNumber++) {
       try {
-        driver.switchTo().frame(1);
+        if (switchFrame) {
+          driver.switchTo().frame(1);
+        } else {
+          switchFrame = true;
+        }
         // Firefox fails here with "NoSuchWindowError: Browsing context has been discarded"
         final String PARTY_TYPE_COLUMN = "4";
         final String party_type = driver.findElement(By.cssSelector("tr:nth-child(" + rowNumber.toString() + ") > td:nth-child(" + PARTY_TYPE_COLUMN + ")")).getText();
         if (party_type.equals("DEFENDANT")) {
           fillInDefendantInfo(rowNumber);
+        } else {
+          switchFrame = false;
         }
       } catch(Throwable t) {
         // Assume we ran out of rows on this page.
