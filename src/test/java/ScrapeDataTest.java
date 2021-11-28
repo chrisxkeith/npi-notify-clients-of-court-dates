@@ -8,6 +8,8 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.JavascriptExecutor;
 
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,6 +55,7 @@ public class ScrapeDataTest {
         crd.room = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText();
         crd.location = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText();
         crd.print();
+        this.caseCount++;
       } catch(Throwable e) {
         if (this.debug) {
           System.out.println("crd.caseNumber exception: " + e.toString());
@@ -148,6 +151,7 @@ public class ScrapeDataTest {
     this.scrapeOnePage();
   }
   private boolean debug = false;
+  private int caseCount = 0;
   private WebDriver driver;
   JavascriptExecutor js;
   @Before
@@ -161,8 +165,14 @@ public class ScrapeDataTest {
   }
   @Test
   public void scrapeData() {
+    Instant start = Instant.now();
     for (char c = 'A'; c <= 'Z'; c++) {
       this.scrapeByFirstLetter(Character.toString(c));
+    }
+    if (debug) {
+      Long timeElapsed = Duration.between(start, Instant.now()).toMillis() / 1000;
+      System.out.println("caseCount: " + caseCount);
+      System.out.println("duration in seconds: " + timeElapsed.toString());
     }
   }
 }
