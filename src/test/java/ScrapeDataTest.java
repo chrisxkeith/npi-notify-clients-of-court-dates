@@ -10,14 +10,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ScrapeDataTest {
-  private void doSleep(int seconds) {
+/*  private void doSleep(int seconds) {
     try {
       Thread.sleep(seconds * 1000);
     } catch (InterruptedException e) {
       // TO DO Auto-generated catch block
       e.printStackTrace();
     }
-  }
+  } */
   String trimString(String s) {
     return s.trim().replace(",","");
   }
@@ -25,50 +25,53 @@ public class ScrapeDataTest {
     final String NAME_CORPORATION_COLUMN = "2";
     final String ADDRESS_COLUMN = "3";
     final String PARTY_TYPE_COLUMN = "4";
-    driver.switchTo().frame(1);
 
+    for (Integer rowNumber = 2; rowNumber < 22; rowNumber++) {
+      try {
+        driver.switchTo().frame(1);
         // Firefox fails here with "NoSuchWindowError: Browsing context has been discarded"
-    final String party_type = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + PARTY_TYPE_COLUMN + ")")).getText();
-    String[] names = new String[2];
-    String clientAddress = "";
-    String caseNumber = "";
-    String courtDate = "";
-    String room = "";
-    String location = "";
-
-    if (party_type.equals("DEFENDANT")) {
-      final String defendant_name = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + NAME_CORPORATION_COLUMN + ")")).getText();
-      if (defendant_name.contains(",")) {
-        names = defendant_name.split(",");
-      } else {
-        names[0] = defendant_name;
-        names[1] = "";
-      }
-      final String cellText = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + ADDRESS_COLUMN + ")")).getText();
-
-      String[] chunks = cellText.split("Case:");
-      clientAddress = this.trimString(chunks[0]);
-      caseNumber = "";
-      Pattern pattern = Pattern.compile("\\d\\d\\d\\d\\d\\d\\d", Pattern.CASE_INSENSITIVE);
-      Matcher matcher = pattern.matcher(cellText);
-      if (matcher.find()) {
-        caseNumber = matcher.group();
-      }
-      if (!caseNumber.isEmpty()) {
-          driver.findElement(By.linkText(caseNumber)).click();
-// TO DO : check for 'No case events were found.', return empty strings if so.
-          courtDate = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(2)")).getText();
-          room = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText();
-          location = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText();
-          // driver.execute_script("window.history.go(-1)");
-          System.out.println(this.trimString(names[0]) + ',' +
-                              this.trimString(names[1]) + ',' +
-                              this.trimString(clientAddress) + ',' +
-                              this.trimString(caseNumber) + ',' +
-                              this.trimString(courtDate) + ',' +
-                              this.trimString(location) + ',' +
-                              this.trimString(room) + ',' +
-                              this.trimString(location));
+        final String party_type = driver.findElement(By.cssSelector("tr:nth-child(" + rowNumber.toString() + ") > td:nth-child(" + PARTY_TYPE_COLUMN + ")")).getText();
+        if (party_type.equals("DEFENDANT")) {      
+          final String defendant_name = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + NAME_CORPORATION_COLUMN + ")")).getText();
+          String[] names = new String[2];
+          if (defendant_name.contains(",")) {
+            names = defendant_name.split(","); // last, first
+          } else {
+            names[1] = defendant_name;
+            names[0] = "";
+          }
+          final String cellText = driver.findElement(By.cssSelector("tr:nth-child(2) > td:nth-child(" + ADDRESS_COLUMN + ")")).getText();    
+          String[] chunks = cellText.split("Case:");
+          String clientAddress = this.trimString(chunks[0]);
+          String caseNumber = "";
+          Pattern pattern = Pattern.compile("\\d\\d\\d\\d\\d\\d\\d", Pattern.CASE_INSENSITIVE);
+          Matcher matcher = pattern.matcher(cellText);
+          if (matcher.find()) {
+            caseNumber = matcher.group();
+          }
+          if (!caseNumber.isEmpty()) {
+              driver.findElement(By.linkText(caseNumber)).click();
+              try {
+                String courtDate = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(2)")).getText();
+                String room = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(3)")).getText();
+                String location = driver.findElement(By.cssSelector("a:nth-child(5) td:nth-child(4)")).getText();
+                System.out.println(this.trimString(names[1]) + ',' +
+                                    this.trimString(names[0]) + ',' +
+                                    this.trimString(clientAddress) + ',' +
+                                    this.trimString(caseNumber) + ',' +
+                                    this.trimString(courtDate) + ',' +
+                                    this.trimString(location) + ',' +
+                                    this.trimString(room) + ',' +
+                                    this.trimString(location));
+              } catch(Throwable e) {
+                // Assume no (or incomplete) case event history. Continue to the next row in the case list.
+              }              
+              this.js.executeScript("window.history.go(-1)");
+          }
+        }
+      } catch(Throwable t) {
+        // Assume we ran out of rows on this page.
+        return;
       }
     }
   }
