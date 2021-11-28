@@ -6,6 +6,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.JavascriptExecutor;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -118,6 +121,15 @@ public class ScrapeDataTest {
       switchFrame = false;
     }
   }
+  private SimpleDateFormat df = new SimpleDateFormat("dd-MMM-YYYY");
+  String getFirstDate() {
+    Calendar c = Calendar.getInstance();
+    c.set(Calendar.DAY_OF_MONTH, 1);
+    return df.format(c.getTime());
+  }
+  String getLastDate() {
+    return df.format(Calendar.getInstance().getTime());
+  }
   void scrapeByFirstLetter(String firstLetter) {
     driver.get("https://gscivildata.shelbycountytn.gov/pls/gnweb/ck_public_qry_cpty.cp_personcase_setup_idx");
     driver.switchTo().frame(1);
@@ -125,10 +137,10 @@ public class ScrapeDataTest {
     driver.findElement(By.name("last_name")).click();
     driver.findElement(By.name("last_name")).sendKeys(firstLetter);
     driver.findElement(By.name("begin_date")).click();
-    driver.findElement(By.name("begin_date")).sendKeys("01-NOV-2021");
+    driver.findElement(By.name("begin_date")).sendKeys(this.getFirstDate());
     driver.findElement(By.cssSelector("tr:nth-child(7) > td:nth-child(1)")).click();
     driver.findElement(By.name("end_date")).click();
-    driver.findElement(By.name("end_date")).sendKeys("14-NOV-2021");
+    driver.findElement(By.name("end_date")).sendKeys(this.getLastDate());
     driver.findElement(By.name("case_type")).click();
 
     driver.findElement(By.cssSelector("option:nth-child(17)")).click();
