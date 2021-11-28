@@ -88,25 +88,29 @@ public class ScrapeDataTest {
   }
   void scrapeOnePage() {
     boolean switchFrame = true;
-    for (Integer rowNumber = 2; rowNumber < 22; rowNumber++) {
-      try {
-        if (switchFrame) {
-          driver.switchTo().frame(1);
-        } else {
-          switchFrame = true;
+    while (true) {
+      for (Integer rowNumber = 2; rowNumber < 22; rowNumber++) {
+        try {
+          if (switchFrame) {
+            driver.switchTo().frame(1);
+          } else {
+            switchFrame = true;
+          }
+          // Firefox fails here with "NoSuchWindowError: Browsing context has been discarded"
+          final String PARTY_TYPE_COLUMN = "4";
+          final String party_type = driver.findElement(By.cssSelector("tr:nth-child(" + rowNumber.toString() + ") > td:nth-child(" + PARTY_TYPE_COLUMN + ")")).getText();
+          if (party_type.equals("DEFENDANT")) {
+            fillInDefendantInfo(rowNumber);
+          } else {
+            switchFrame = false;
+          }
+        } catch(Throwable t) {
+          // Assume we ran out of rows on this page.
+          return;
         }
-        // Firefox fails here with "NoSuchWindowError: Browsing context has been discarded"
-        final String PARTY_TYPE_COLUMN = "4";
-        final String party_type = driver.findElement(By.cssSelector("tr:nth-child(" + rowNumber.toString() + ") > td:nth-child(" + PARTY_TYPE_COLUMN + ")")).getText();
-        if (party_type.equals("DEFENDANT")) {
-          fillInDefendantInfo(rowNumber);
-        } else {
-          switchFrame = false;
-        }
-      } catch(Throwable t) {
-        // Assume we ran out of rows on this page.
-        return;
       }
+      driver.findElement(By.linkText("Next->")).click();
+      switchFrame = false;
     }
   }
   void scrapeByFirstLetter(String firstLetter) {
