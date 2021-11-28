@@ -109,7 +109,12 @@ public class ScrapeDataTest {
           return;
         }
       }
-      driver.findElement(By.linkText("Next->")).click();
+      try {
+        driver.findElement(By.linkText("Next->")).click();
+      } catch(Throwable t) {
+          // Assume we ran out of clients beginning with 'firstLetter'.
+          return;
+      }
       switchFrame = false;
     }
   }
@@ -144,6 +149,8 @@ public class ScrapeDataTest {
   }
   @Test
   public void scrapeData() {
-    this.scrapeByFirstLetter("A");
+    for (char c = 'A'; c <= 'Z'; c++) {
+      this.scrapeByFirstLetter(Character.toString(c));
+    }
   }
 }
