@@ -36,7 +36,7 @@ public class ScrapeDataTest {
         this.trimString(courtDate) + ',' +
         this.trimString(location) + ',' +
         this.trimString(room) + ',' +
-        this.trimString(location));
+        this.trimString(landlord));
     }
 }
 /*  private void doSleep(int seconds) {
@@ -83,6 +83,7 @@ public class ScrapeDataTest {
             "tr:nth-child(" + rowNumber.toString() + ") > td:nth-child(" + ADDRESS_COLUMN + ")")).getText();    
     String[] chunks = cellText.split("Case:");
     crd.clientAddress = chunks[0];
+    crd.landlord = chunks[1].split("V")[0].substring(9);
     Pattern pattern = Pattern.compile("\\d\\d\\d\\d\\d\\d\\d", Pattern.CASE_INSENSITIVE);
     Matcher matcher = pattern.matcher(cellText);
     if (matcher.find()) {
