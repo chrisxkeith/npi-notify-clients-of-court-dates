@@ -28,14 +28,15 @@ public class ScrapeDataTest {
       return s.trim().replace(",", "").replace("\n", " ");
     }
     void print() {
-      System.out.println(this.trimString(clientLastName) + ',' +
-      this.trimString(clientFirstName) + ',' +
-      this.trimString(clientAddress) + ',' +
-      this.trimString(caseNumber) + ',' +
-      this.trimString(courtDate) + ',' +
-      this.trimString(location) + ',' +
-      this.trimString(room) + ',' +
-      this.trimString(location));
+      System.out.println(
+        this.trimString(caseNumber) + ',' +
+        this.trimString(clientLastName) + ',' +
+        this.trimString(clientFirstName) + ',' +
+        this.trimString(clientAddress) + ',' +
+        this.trimString(courtDate) + ',' +
+        this.trimString(location) + ',' +
+        this.trimString(room) + ',' +
+        this.trimString(location));
     }
 }
 /*  private void doSleep(int seconds) {
